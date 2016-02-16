@@ -23,13 +23,6 @@
     ],
     "no-mixed-spaces-and-tabs": 2,
     "no-multi-str": 2,
-    "one-var": [
-      2,
-      {
-        "uninitialized": "always",
-        "initialized": "never"
-      }
-    ],
     "quote-props": [
       2,
       "as-needed",

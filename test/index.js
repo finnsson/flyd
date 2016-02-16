@@ -228,6 +228,110 @@ describe('stream', function() {
     });
   });
 
+  describe('autoFn', function() {
+    it('is updated when dependencies change', function() {
+      var a = stream(4);
+      var sq = flyd.autoFn(function() {
+        return a() * a();
+      });
+      assert.equal(sq(), 16);
+      a(5);
+      assert.equal(sq(), 25);
+
+      var b = stream();
+      var x = null;
+      flyd.autoFn(function() {
+        x = b() * b();
+      });
+      assert.equal(isNaN(x), true);
+      b(11);
+      assert.equal(x, 121);
+    });
+
+    it('is updated when current dependencies change', function() {
+      var a = stream(1);
+      var b = stream(2);
+      var c = stream(3);
+      var count = 0;
+
+      var abTest = flyd.autoFn(function() {
+        count++;
+        if (a() > 0) {
+          return b();
+        } else {
+          return c();
+        }
+      });
+      assert.equal(abTest(), 2);
+      assert.equal(count, 1);
+      assert.equal(a.listeners.length, 1);
+      assert.equal(b.listeners.length, 1);
+      assert.equal(c.listeners.length, 0);
+      assert.equal(abTest.deps.length, 2);
+
+      c(5);
+      assert.equal(abTest(), 2);
+      assert.equal(count, 1);
+      assert.equal(a.listeners.length, 1);
+      assert.equal(b.listeners.length, 1);
+      assert.equal(c.listeners.length, 0);
+      assert.equal(abTest.deps.length, 2);
+
+      b(11);
+      assert.equal(abTest(), 11);
+      assert.equal(count, 2);
+      assert.equal(a.listeners.length, 1);
+      assert.equal(b.listeners.length, 1);
+      assert.equal(c.listeners.length, 0);
+      assert.equal(abTest.deps.length, 2);
+
+      a(-1);
+      assert.equal(abTest(), 5);
+      assert.equal(abTest(), 5);
+      assert.equal(count, 3);
+      assert.equal(a.listeners.length, 1);
+      assert.equal(b.listeners.length, 0);
+      assert.equal(c.listeners.length, 1);
+      assert.equal(abTest.deps.length, 2);
+    });
+
+    it('updated correct autoFn when nesting autoFn', function() {
+      var a = stream(1);
+      var b = stream(2);
+      var c = stream(3);
+      var count = 0;
+      var nestedCount = 0;
+      var nestedSum = 0;
+
+      flyd.autoFn(function() {
+        count++;
+        if (a() > 0) {
+          flyd.autoFn(function() {
+            nestedCount++;
+            nestedSum += b();
+          }); // true = automatically end when rerunning parent autoFn
+        } else {
+          return c();
+        }
+      });
+
+      assert.equal(count, 1);
+      assert.equal(nestedCount, 1);
+      assert.equal(nestedSum, 2);
+
+      b(5);
+
+      assert.equal(count, 1);
+      assert.equal(nestedCount, 2);
+      assert.equal(nestedSum, 7);
+
+      a(-1);
+
+      assert.equal(count, 2);
+      assert.equal(nestedCount, 2);
+    });
+  });
+
   describe('ending a stream', function() {
     it('works for streams without dependencies', function() {
       var s = stream(1);
