@@ -330,6 +330,35 @@ describe('stream', function() {
       assert.equal(count, 2);
       assert.equal(nestedCount, 2);
     });
+
+    it('can opt out of autoFn', function() {
+      var a = stream(1);
+      var b = stream(2);
+      var aSum = 0;
+      var bSum = 0;
+
+      flyd.autoFn(function() {
+        aSum += a();
+        flyd.autoOut(function() {
+          bSum += b();
+        });
+      });
+
+      assert.equal(aSum, 1);
+      assert.equal(bSum, 2);
+
+      // b should not trigger autoFn
+      b(5);
+
+      assert.equal(aSum, 1);
+      assert.equal(bSum, 2);
+
+      // a should trigger autoFn
+      a(10);
+
+      assert.equal(aSum, 11);
+      assert.equal(bSum, 7);
+    });
   });
 
   describe('ending a stream', function() {
